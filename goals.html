@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mood Check</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;font-family:Poppins,sans-serif;margin:0;padding:0;}
+body{min-height:100vh;background:linear-gradient(135deg,#ffd1e8,#f48fb1,#ec407a);display:flex;justify-content:center;padding:16px;}
+.container{background:#fff;width:100%;max-width:1100px;border-radius:26px;padding:22px;box-shadow:0 20px 40px rgba(0,0,0,.25);}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.back{background:#f48fb1;border:none;color:#fff;padding:10px 18px;border-radius:14px;font-weight:600;cursor:pointer;}
+.profile{display:flex;gap:24px;align-items:center;margin-top:0;flex-wrap:wrap;}
+.avatar-box{position:relative;}
+.avatar{width:80px;height:80px;border-radius:50%;border:5px solid #f48fb1;object-fit:cover;}
+.info h2{margin:0;}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;}
+.tab{background:#f48fb1;color:white;padding:8px 16px;border-radius:20px;cursor:pointer;transition:.3s;font-weight:600;}
+.tab.active{background:#ec407a;}
+.question-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
+.question{background:#f5f5f5;padding:12px;border-radius:16px;text-align:center;cursor:pointer;transition:.2s;position:relative;}
+.question:hover:not(.locked){transform:scale(1.02);}
+.question.unanswered{border:2px dashed #ef5350;}
+.question.locked{opacity:0.6;cursor:not-allowed;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;justify-content:center;align-items:center;opacity:0;pointer-events:none;transition:.3s;z-index:1000;}
+.modal.active{opacity:1;pointer-events:auto;}
+.modal-box{background:#fff;padding:24px;border-radius:22px;width:90%;max-width:420px;text-align:center;position:relative;}
+textarea{width:100%;min-height:80px;border-radius:16px;border:1px solid #ddd;padding:10px;margin-top:10px;resize:none;font-family:Poppins,sans-serif;}
+.mood-selector{margin-top:10px;font-size:24px;cursor:pointer;}
+button.submit{margin-top:12px;background:#ec407a;color:white;padding:10px 16px;border:none;border-radius:14px;cursor:pointer;font-weight:600;}
+button.close{margin-top:16px;background:#f48fb1;color:white;padding:10px 16px;border:none;border-radius:14px;}
+.mood-summary{margin-top:20px;background:#fde4ec;padding:16px;border-radius:16px;white-space:pre-wrap;}
+@media(max-width:600px){.question-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}}
+</style>
+</head>
+<body>
+ 
+<div class="container">
+  <div class="top">
+    <button class="back" onclick="location.href='homepage1.html'">⬅ Back</button>
+    <strong>Mood Check</strong>
+  </div>
+ 
+  <div class="profile">
+    <div class="avatar-box">
+      <img id="avatar" class="avatar">
+    </div>
+    <div class="info">
+      <h2 id="username">User</h2>
+    </div>
+  </div>
+ 
+  <div class="tabs">
+    <div class="tab active" id="questionsTab">Questions</div>
+    <div class="tab" id="summaryTab">Mood Summary</div>
+  </div>
+ 
+  <div id="questionsPage">
+    <div class="question-grid" id="questionGrid"></div>
+  </div>
+ 
+  <div id="summaryPage" style="display:none;">
+    <div class="mood-summary" id="summaryContent">
+      <h3>Your Mood Summary</h3>
+      <p id="summaryText">No answers yet.</p>
+    </div>
+  </div>
+</div>
+ 
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3 id="modalTitle"></h3>
+    <textarea id="answerInput" placeholder="Write your answer here..."></textarea>
+    <div class="mood-selector" id="moodSelector">
+      <span data-mood="😀">😀</span>
+      <span data-mood="😐">😐</span>
+      <span data-mood="😢">😢</span>
+      <span data-mood="😡">😡</span>
+    </div>
+    <button class="submit" onclick="saveAnswer()">Submit</button>
+    <button class="close" onclick="closeModal()">Close</button>
+  </div>
+</div>
+ 
+<script>
+const token = localStorage.getItem("token");
+if(!token){ alert("No user logged in"); window.location.href="login.html"; }
+ 
+const username = document.getElementById("username");
+const avatar = document.getElementById("avatar");
+const questionGrid = document.getElementById("questionGrid");
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modalTitle");
+const answerInput = document.getElementById("answerInput");
+const moodSelector = document.getElementById("moodSelector");
+const questionsPage = document.getElementById("questionsPage");
+const summaryPage = document.getElementById("summaryPage");
+const summaryText = document.getElementById("summaryText");
+const questionsTab = document.getElementById("questionsTab");
+const summaryTab = document.getElementById("summaryTab");
+ 
+username.textContent = localStorage.getItem("username") || "Guest";
+avatar.src = localStorage.getItem("avatar") || "https://i.imgur.com/8KmHelping.png";
+ 
+const questions = [
+  "How are you feeling today?",
+  "Did you sleep well last night?",
+  "Are you feeling stressed?",
+  "Are you excited about school/work?",
+  "How’s your energy level today?",
+  "Did you eat properly today?",
+  "Are you feeling anxious about something?",
+  "Did you exercise today?",
+  "Are you happy with your progress today?",
+  "Did someone make you smile today?",
+  "Are you feeling lonely?",
+  "Are you proud of something today?",
+  "Did you learn something new today?",
+  "Are you feeling frustrated?",
+  "Did you help someone today?",
+  "Are you motivated to finish tasks?",
+  "Are you feeling sad or down?",
+  "Did you spend time with friends/family?",
+  "Are you feeling calm and relaxed?",
+  "Did you achieve a small goal today?"
+];
+ 
+let answers = {};
+let moods = {};
+let todayDate = new Date().toDateString();
+let selectedMood = null;
+let selectedIndex = null;
+ 
+// Tabs
+questionsTab.onclick = ()=>{ questionsPage.style.display="block"; summaryPage.style.display="none"; questionsTab.classList.add("active"); summaryTab.classList.remove("active"); };
+summaryTab.onclick = ()=>{ questionsPage.style.display="none"; summaryPage.style.display="block"; questionsTab.classList.remove("active"); summaryTab.classList.add("active"); updateSummary(); };
+ 
+// Load reflections from backend
+async function loadReflections(){
+  try {
+    const res = await fetch("http://localhost:5000/api/reflections", {
+      headers:{ "Authorization":"Bearer "+token }
+    });
+    if(!res.ok) throw new Error("Failed to fetch reflections");
+    const data = await res.json();
+ 
+    answers = {};
+    moods = {};
+ 
+    // Map answers for today only
+    data.forEach(r=>{
+      if(r.date === todayDate){
+        answers[r.questionIndex] = r.answer;
+        moods[r.questionIndex] = r.mood;
+      }
+    });
+ 
+    renderQuestions();
+  } catch(err){
+    console.error(err);
+    alert("Failed to load reflections");
+  }
+}
+ 
+// Render questions with per-day lock
+function renderQuestions(){
+  questionGrid.innerHTML="";
+  questions.forEach((q,i)=>{
+    const div = document.createElement("div");
+    div.className = "question";
+    if(answers[i]) div.classList.add("locked");
+    else div.classList.add("unanswered");
+ 
+    div.textContent = q;
+    div.onclick = ()=>{
+      if(answers[i]) return; // lock answered questions
+      modalTitle.textContent = q;
+      answerInput.value = answers[i] || "";
+      selectedIndex = i;
+      modal.classList.add("active");
+      Array.from(moodSelector.children).forEach(span=>{
+        span.style.border = moods[i]===span.dataset.mood?"2px solid #42a5f5":"none";
+      });
+    };
+    questionGrid.appendChild(div);
+  });
+}
+ 
+// Mood selection
+Array.from(moodSelector.children).forEach(span=>{
+  span.onclick=()=>{
+    selectedMood = span.dataset.mood;
+    Array.from(moodSelector.children).forEach(s=>s.style.border="none");
+    span.style.border="2px solid #42a5f5";
+  };
+});
+ 
+function closeModal(){ modal.classList.remove("active"); }
+ 
+async function saveAnswer(){
+  if(selectedIndex===null) return;
+  const answer = answerInput.value;
+  const mood = selectedMood;
+  const date = todayDate;
+  try {
+    const res = await fetch("http://localhost:5000/api/reflections",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json","Authorization":"Bearer "+token },
+      body:JSON.stringify({ questionIndex:selectedIndex, answer, mood, date })
+    });
+    if(!res.ok) throw new Error("Failed to save");
+    answers[selectedIndex] = answer;
+    moods[selectedIndex] = mood;
+    renderQuestions();
+    modal.classList.remove("active");
+    updateSummary();
+  } catch(err){ console.error(err); alert("Error saving reflection"); }
+}
+ 
+// Mood summary
+function updateSummary(){
+  if(Object.keys(answers).length===0){ summaryText.textContent="No answers yet."; return; }
+  let summary="";
+  questions.forEach((q,i)=>{
+    if(answers[i]) summary += `Q: ${q}\nA: ${answers[i]} ${moods[i]||""}\n\n`;
+  });
+  summaryText.textContent = summary.trim();
+}
+ 
+// INIT
+loadReflections();
+ 
+// Auto-reset at 12 AM
+setInterval(()=>{
+  const now = new Date();
+  if(now.getHours()===0 && now.getMinutes()===0){ // exactly midnight
+    answers={};
+    moods={};
+    loadReflections();
+  }
+}, 60000); // check every minute
+ 
+</script>
+</body>
+</html>

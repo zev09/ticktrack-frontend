@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Task List App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#ffffff;
+  --bg2:#f8c8dc;
+  --bg3:#e75480;
+  --card:#ffffffcc;
+  --primary:#e75480;
+  --primary2:#f8c8dc;
+  --text:#4a2c3a;
+  --shadow: rgba(231,84,128,.25);
+}
+*{box-sizing:border-box;}
+body{
+  font-family:'Poppins',sans-serif;
+  margin:0;
+  padding:20px;
+  background: linear-gradient(135deg,var(--bg1), var(--bg2), var(--bg3));
+  color: var(--text);
+}
+.container{max-width:600px;margin:auto;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;}
+.header h2{margin:0;font-size:22px;}
+.back-btn{
+  padding:8px 16px;border:none;border-radius:15px;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  color:white;cursor:pointer;box-shadow:0 6px 15px var(--shadow);
+  font-weight:500;margin-top:8px;
+}
+.search-box{
+  background:var(--card);padding:12px 18px;border-radius:25px;
+  box-shadow:0 6px 15px var(--shadow);margin-bottom:20px;
+}
+.search-box input{width:100%;border:none;outline:none;font-size:14px;background:transparent;}
+.tasks{display:flex;flex-direction:column;gap:12px;}
+.task{
+  background:var(--card);padding:12px 15px;border-radius:20px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 6px 15px var(--shadow);transition:.2s;flex-wrap:wrap;
+}
+.task:hover{ transform:translateY(-2px); }
+.task-left{display:flex;align-items:center;gap:10px;flex:1 1 200px;}
+.task-left input[type="checkbox"]{width:20px;height:20px;accent-color:green;cursor:pointer;flex-shrink:0;}
+.task-info{display:flex;flex-direction:column;font-size:14px;word-break:break-word;}
+.task-info span{font-size:12px;opacity:0.75;}
+.add-task-btn,.finish-btn{
+  margin-top:15px;padding:14px;border:none;border-radius:18px;
+  font-size:16px;cursor:pointer;width:100%;
+  box-shadow:0 6px 15px var(--shadow);font-weight:500;
+}
+.add-task-btn{background:linear-gradient(135deg,var(--primary),var(--primary2));color:white;}
+.finish-btn{
+  background:linear-gradient(135deg,#6cff88,#2abf4f);
+  color:white;display:none;
+  box-shadow:0 6px 15px rgba(42,191,79,.3);
+}
+.modal{
+  position:fixed;inset:0;background: rgba(0,0,0,0.5);
+  display:none;justify-content:center;align-items:center;z-index:100;
+}
+.modal.active{ display:flex; }
+.modal-content{
+  background: var(--card);backdrop-filter:blur(12px);
+  padding:25px;border-radius:25px;width:90%;max-width:400px;
+  box-shadow:0 15px 30px var(--shadow);
+  display:flex;flex-direction:column;gap:12px;
+}
+.modal-content input{
+  width:100%;padding:10px;border-radius:12px;border:none;
+  outline:none;font-size:14px;
+}
+.task.done span{ text-decoration: line-through; opacity:0.6; }
+@media (min-width:768px){
+  .task{ flex-wrap:nowrap; }
+  .back-btn{ margin-top:0; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h2>📋 Tasks</h2>
+    <button class="back-btn" onclick="goBack()">⬅ Back</button>
+  </div>
+  <div class="search-box">
+    <input id="search" placeholder="Search tasks...">
+  </div>
+  <div class="tasks" id="taskList"></div>
+  <button class="add-task-btn" onclick="openModal()">➕ Add Task</button>
+  <button class="finish-btn" id="finishBtn" onclick="finishTasks()">🎉 Finish Tasks</button>
+</div>
+ 
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <input id="taskName" placeholder="Task name">
+    <input type="time" id="taskTime">
+    <button onclick="addTask()">Add Task</button>
+    <button onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+ 
+<script>
+const token = localStorage.getItem("token");
+if(!token){ window.location.href="login.html"; }
+ 
+let tasks = [];
+ 
+// FETCH TASKS FROM BACKEND
+async function fetchTasks(){
+  const res = await fetch("http://localhost:5000/api/tasks",{
+    headers:{ Authorization:`Bearer ${token}` }
+  });
+  tasks = await res.json();
+  // Add local flag for achievement tracking
+  tasks.forEach(t => t.achievementLogged = true);
+  renderTasks();
+}
+ 
+// RENDER TASKS
+function renderTasks(){
+  const taskList = document.getElementById("taskList");
+  const finishBtn = document.getElementById("finishBtn");
+  taskList.innerHTML="";
+ 
+  tasks.forEach((t,i)=>{
+    const div=document.createElement("div");
+    div.className="task"+(t.done?" done":"");
+    div.innerHTML=`
+      <div class="task-left">
+        <input type="checkbox" ${t.done?"checked":""} onchange="toggleDone(${i})">
+        <div class="task-info">
+          <b>${t.name}</b>
+          <span>Created: ${t.date||""} ${t.time? "| Remind at: "+t.time:""}</span>
+        </div>
+      </div>
+      <button onclick="deleteTask(${i})">🗑</button>
+    `;
+    taskList.appendChild(div);
+  });
+ 
+  finishBtn.style.display=(tasks.length>0&&tasks.every(t=>t.done))?"block":"none";
+}
+ 
+// ADD TASK
+async function addTask(){
+  const name=document.getElementById("taskName").value.trim();
+  const time=document.getElementById("taskTime").value;
+  if(!name){ alert("Please enter a task!"); return; }
+ 
+  const date=new Date().toLocaleString();
+ 
+  const res=await fetch("http://localhost:5000/api/tasks",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      Authorization:`Bearer ${token}`
+    },
+    body: JSON.stringify({name,date,time})
+  });
+ 
+  const newTask=await res.json();
+  newTask.achievementLogged = false; // for first-time achievement
+  tasks.push(newTask);
+  renderTasks();
+  closeModal();
+ 
+  // ===== UPDATE TASK ACHIEVEMENTS ONLY IF NEW =====
+  if(!newTask.achievementLogged){
+    await updateTaskAchievements();
+    newTask.achievementLogged = true;
+  }
+}
+ 
+// UPDATE TASK ACHIEVEMENTS
+async function updateTaskAchievements() {
+  try {
+    await fetch("http://localhost:5000/api/achievements/update", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` 
+      },
+      body: JSON.stringify({ key: "tasks", increment: 1 })
+    });
+  } catch(err) {
+    console.error("Task achievement update failed", err);
+  }
+}
+ 
+// TOGGLE DONE
+async function toggleDone(i){
+  const task=tasks[i];
+  await fetch(`http://localhost:5000/api/tasks/${task._id}`,{
+    method:"PATCH",
+    headers:{Authorization:`Bearer ${token}`}
+  });
+  task.done=!task.done;
+  renderTasks();
+}
+ 
+// DELETE TASK
+async function deleteTask(i){
+  const task=tasks[i];
+  await fetch(`http://localhost:5000/api/tasks/${task._id}`,{
+    method:"DELETE",
+    headers:{Authorization:`Bearer ${token}`}
+  });
+  tasks.splice(i,1);
+  renderTasks();
+}
+ 
+function openModal(){document.getElementById("modal").classList.add("active");}
+function closeModal(){document.getElementById("modal").classList.remove("active");}
+function goBack(){window.location.href="homepage1.html";}
+function finishTasks(){window.location.href="congratulations.html";}
+ 
+// SEARCH
+document.getElementById("search").addEventListener("input",e=>{
+  const val=e.target.value.toLowerCase();
+  document.querySelectorAll(".task").forEach(t=>{
+    t.style.display=t.innerText.toLowerCase().includes(val)?"flex":"none";
+  });
+});
+ 
+fetchTasks();
+</script>
+</body>
+</html>

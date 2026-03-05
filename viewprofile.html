@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>View Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;font-family:Poppins,sans-serif;margin:0;padding:0;}
+body{min-height:100vh;background:linear-gradient(135deg,#ffd1e8,#f48fb1,#ec407a);display:flex;justify-content:center;padding:16px;}
+.container{background:#fff;width:100%;max-width:1100px;border-radius:26px;padding:22px;box-shadow:0 20px 40px rgba(0,0,0,.25);}
+.top{display:flex;justify-content:space-between;align-items:center;}
+.back{background:#f48fb1;border:none;color:#fff;padding:10px 18px;border-radius:14px;font-weight:600;cursor:pointer;}
+.profile{display:flex;gap:24px;align-items:center;margin-top:20px;flex-wrap:wrap;}
+.avatar-box{position:relative;}
+.avatar{width:120px;height:120px;border-radius:50%;border:5px solid #f48fb1;object-fit:cover;}
+.upload{position:absolute;bottom:0;right:0;background:#ec407a;color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
+.info h2{margin:0}
+.rank{margin-top:6px;padding:6px 16px;border-radius:20px;color:#fff;display:inline-block;font-weight:600;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-top:24px;}
+.stat{background:#fde4ec;padding:18px;border-radius:18px;text-align:center;}
+.stat h3{margin:0;font-size:26px;}
+.stat span{font-size:13px;color:#555;}
+.progress-section{margin-top:24px;}
+.progress-bar{height:18px;background:#eee;border-radius:20px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#f06292,#ec407a);transition:width .3s ease;}
+.achievements{margin-top:30px;}
+.tabs{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.tab{padding:8px 16px;border-radius:20px;cursor:pointer;font-weight:600;background:#f48fb1;color:white;transition:.3s;}
+.tab.active{background:#ec407a;}
+.achievement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
+.achievement{background:#f5f5f5;border-radius:16px;padding:14px;text-align:center;cursor:pointer;font-size:13px;transition:.2s;position:relative;}
+.achievement.unlocked{background:#fce4ec;border:2px solid #f48fb1;}
+.achievement.locked::after{content:"🔒";position:absolute;top:8px;right:8px;font-size:16px;}
+.achievement .progress-small{height:6px;background:#ddd;border-radius:12px;margin-top:6px;overflow:hidden;}
+.achievement .progress-fill-small{height:100%;background:linear-gradient(90deg,#f06292,#ec407a);width:0%;transition:width .3s ease;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;justify-content:center;align-items:center;opacity:0;pointer-events:none;transition:.3s;z-index:1000;}
+.modal.active{opacity:1;pointer-events:auto;}
+.modal-box{background:#fff;padding:24px;border-radius:22px;width:90%;max-width:420px;text-align:center;}
+.tag{margin-top:10px;display:inline-block;padding:6px 14px;border-radius:16px;color:#fff;font-size:13px;}
+.close{margin-top:20px;background:#ec407a;border:none;color:#fff;padding:10px 18px;border-radius:14px;cursor:pointer;}
+@media(max-width:600px){.profile{text-align:center;justify-content:center;}.achievement-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}}
+</style>
+</head>
+<body>
+ 
+<div class="container">
+  <div class="top">
+    <button class="back" onclick="location.href='homepage1.html'">⬅ Back</button>
+    <strong>Profile</strong>
+  </div>
+ 
+  <div class="profile">
+    <div class="avatar-box">
+      <img id="avatar" class="avatar">
+      <label class="upload">➕<input type="file" hidden accept="image/*" onchange="uploadPic(event)"></label>
+    </div>
+    <div class="info">
+      <h2 id="username">User</h2>
+      <div id="rank" class="rank">Novice</div>
+    </div>
+  </div>
+ 
+  <div class="stats">
+    <div class="stat"><h3 id="achCount">0</h3><span>Achievements</span></div>
+    <div class="stat"><h3 id="level">1</h3><span>Level</span></div>
+    <div class="stat"><h3 id="points">0</h3><span>Points</span></div>
+  </div>
+ 
+  <div class="progress-section">
+    <b>Progress to Legend</b>
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+  </div>
+ 
+  <div class="achievements">
+    <h3>Achievements</h3>
+    <div class="tabs" id="tabMenu"></div>
+    <div class="achievement-grid" id="grid"></div>
+  </div>
+</div>
+ 
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3 id="mTitle"></h3>
+    <p id="mDesc"></p>
+    <div id="mTag" class="tag"></div>
+    <button class="close" onclick="modal.classList.remove('active')">Close</button>
+  </div>
+</div>
+ 
+<script>
+// TOKEN from login
+const token = localStorage.getItem("token");
+const API_URL = "http://localhost:5000/api/achievements"; // backend URL
+ 
+// ELEMENTS
+const username = document.getElementById("username");
+const achCount = document.getElementById("achCount");
+const points = document.getElementById("points");
+const level = document.getElementById("level");
+const progress = document.getElementById("progress");
+const rank = document.getElementById("rank");
+const grid = document.getElementById("grid");
+const avatar = document.getElementById("avatar");
+const modal = document.getElementById("modal");
+const mTitle = document.getElementById("mTitle");
+const mDesc = document.getElementById("mDesc");
+const mTag = document.getElementById("mTag");
+const tabMenu = document.getElementById("tabMenu");
+ 
+// AVATAR
+avatar.src = localStorage.getItem("avatar") || "https://i.imgur.com/8KmHelping.png";
+function uploadPic(e){
+  const r = new FileReader();
+  r.onload = ()=>{avatar.src=r.result; localStorage.setItem("avatar", r.result);}
+  r.readAsDataURL(e.target.files[0]);
+}
+ 
+// --- NEW ACHIEVEMENTS (50) ---
+const achievementsList = [
+  // --- Tasks 20 ---
+  { t:"First Task", d:"Added your first task", l:"Easy", key:"tasks", required:1 },
+  { t:"Getting Started", d:"Added 3 tasks", l:"Easy", key:"tasks", required:3 },
+  { t:"Task Collector", d:"Added 5 tasks", l:"Easy", key:"tasks", required:5 },
+  { t:"Task Beginner", d:"Added 1 task", l:"Easy", key:"tasks", required:1 },
+  { t:"Task Enthusiast", d:"Added 10 tasks", l:"Medium", key:"tasks", required:10 },
+  { t:"Task Master", d:"Added 15 tasks", l:"Medium", key:"tasks", required:15 },
+  { t:"Task Legend", d:"Added 20 tasks", l:"Hard", key:"tasks", required:20 },
+  { t:"Task Guru", d:"Added 25 tasks", l:"Hard", key:"tasks", required:25 },
+  { t:"Ultimate Tasker", d:"Added 30 tasks", l:"Extreme", key:"tasks", required:30 },
+  { t:"Supreme Tasker", d:"Added 35 tasks", l:"Extreme", key:"tasks", required:35 },
+  { t:"Task Champion", d:"Added 40 tasks", l:"Extreme", key:"tasks", required:40 },
+  { t:"Task Legend II", d:"Added 45 tasks", l:"Extreme", key:"tasks", required:45 },
+  { t:"Task Collector II", d:"Added 50 tasks", l:"Extreme", key:"tasks", required:50 },
+  { t:"Mini Planner", d:"Added 2 tasks", l:"Easy", key:"tasks", required:2 },
+  { t:"Planner Pro", d:"Added 5 tasks", l:"Medium", key:"tasks", required:5 },
+  { t:"Daily Organizer", d:"Added 8 tasks", l:"Medium", key:"tasks", required:8 },
+  { t:"Task Strategist", d:"Added 12 tasks", l:"Hard", key:"tasks", required:12 },
+  { t:"Task Veteran", d:"Added 18 tasks", l:"Hard", key:"tasks", required:18 },
+  { t:"Task Hero", d:"Added 22 tasks", l:"Hard", key:"tasks", required:22 },
+  { t:"Task Prodigy", d:"Added 28 tasks", l:"Extreme", key:"tasks", required:28 },
+ 
+  // --- Calendar 15 ---
+  { t:"First Mood", d:"Logged your first emotion", l:"Easy", key:"calendar", required:1 },
+  { t:"Mood Tracker", d:"Logged 3 emotions", l:"Easy", key:"calendar", required:3 },
+  { t:"Happy Logger", d:"Logged 5 emotions", l:"Easy", key:"calendar", required:5 },
+  { t:"Emotional Beginner", d:"Logged 1 emotion", l:"Easy", key:"calendar", required:1 },
+  { t:"Mood Enthusiast", d:"Logged 10 emotions", l:"Medium", key:"calendar", required:10 },
+  { t:"Calendar Hero", d:"Logged 15 emotions", l:"Medium", key:"calendar", required:15 },
+  { t:"Emotion Master", d:"Logged 20 emotions", l:"Hard", key:"calendar", required:20 },
+  { t:"Mood Guru", d:"Logged 25 emotions", l:"Hard", key:"calendar", required:25 },
+  { t:"Calendar Legend", d:"Logged 30 emotions", l:"Extreme", key:"calendar", required:30 },
+  { t:"Mood Supreme", d:"Logged 35 emotions", l:"Extreme", key:"calendar", required:35 },
+  { t:"Emotion Pro", d:"Logged 40 emotions", l:"Extreme", key:"calendar", required:40 },
+  { t:"Happy Days", d:"Logged 45 emotions", l:"Extreme", key:"calendar", required:45 },
+  { t:"Joyful Month", d:"Logged 50 emotions", l:"Extreme", key:"calendar", required:50 },
+  { t:"Mood King", d:"Logged 55 emotions", l:"Extreme", key:"calendar", required:55 },
+  { t:"Emotion Legend", d:"Logged 60 emotions", l:"Extreme", key:"calendar", required:60 },
+ 
+  // --- Notes 15 ---
+  { t:"First Note", d:"Created your first note", l:"Easy", key:"notes", required:1 },
+  { t:"Note Taker", d:"Created 3 notes", l:"Easy", key:"notes", required:3 },
+  { t:"Reflection Beginner", d:"Created 5 notes", l:"Easy", key:"notes", required:5 },
+  { t:"Notes Enthusiast", d:"Created 10 notes", l:"Medium", key:"notes", required:10 },
+  { t:"Note Collector", d:"Created 12 notes", l:"Medium", key:"notes", required:12 },
+  { t:"Reflection Pro", d:"Created 15 notes", l:"Medium", key:"notes", required:15 },
+  { t:"Note Master", d:"Created 20 notes", l:"Hard", key:"notes", required:20 },
+  { t:"Note Guru", d:"Created 25 notes", l:"Hard", key:"notes", required:25 },
+  { t:"Note Legend", d:"Created 30 notes", l:"Extreme", key:"notes", required:30 },
+  { t:"Notes Supreme", d:"Created 35 notes", l:"Extreme", key:"notes", required:35 },
+  { t:"Reflection Legend", d:"Created 40 notes", l:"Extreme", key:"notes", required:40 },
+  { t:"Note Prodigy", d:"Created 45 notes", l:"Extreme", key:"notes", required:45 },
+  { t:"Notes Master", d:"Created 50 notes", l:"Extreme", key:"notes", required:50 },
+  { t:"Note Hero", d:"Created 28 notes", l:"Extreme", key:"notes", required:28 },
+  { t:"Reflection King", d:"Created 32 notes", l:"Extreme", key:"notes", required:32 }
+];
+ 
+// --- MAIN LOGIC ---
+let achievements = [];
+ 
+async function loadAchievements() {
+  if(!token) return console.error("No token found");
+ 
+  try {
+    const res = await fetch(API_URL, {
+      method: "GET",
+      headers: { 
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+ 
+    const data = await res.json();
+    if(res.status !== 200) return console.error("Failed to fetch achievements");
+ 
+    // Merge backend progress with frontend achievement list
+    achievements = achievementsList.map((ach, idx)=>{
+      const userValue = data.find(d=>d.key===ach.key && d.t===ach.t);
+      const progressVal = userValue ? userValue.progress : 0;
+      const completed = userValue ? userValue.c : false;
+      return { ...ach, progress: progressVal, c: completed };
+    });
+ 
+    username.textContent = localStorage.getItem("username") || "Guest";
+    renderTabs();
+    renderAchievements("Easy");
+    updateStats();
+  } catch (err) {
+    console.error("Failed to load achievements", err);
+  }
+}
+ 
+function renderTabs() {
+  const categories = ["Easy","Medium","Hard","Extreme"];
+  tabMenu.innerHTML = "";
+  categories.forEach(cat=>{
+    const t = document.createElement("div");
+    t.className = "tab"+(cat==="Easy"?" active":"");
+    t.textContent = cat;
+    t.onclick = ()=>{
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      renderAchievements(cat);
+    };
+    tabMenu.appendChild(t);
+  });
+}
+ 
+function renderAchievements(cat){
+  grid.innerHTML = "";
+  achievements.filter(a=>a.l===cat).forEach(a=>{
+    const d = document.createElement("div");
+    d.className = "achievement"+(a.c?" unlocked":" locked");
+    d.innerHTML = `
+      ${a.t}
+      <div class="progress-small">
+        <div class="progress-fill-small" style="width:${a.progress}%"></div>
+      </div>
+    `;
+    d.onclick = ()=>{
+      modal.classList.add("active");
+      mTitle.textContent = a.t;
+      mDesc.textContent = a.d + (a.c ? " 🎉" : " 🔒");
+      mTag.textContent = a.l;
+      mTag.style.background =
+        a.l=="Easy"?"#66bb6a":
+        a.l=="Medium"?"#42a5f5":
+        a.l=="Hard"?"#ab47bc":"#ef5350";
+    };
+    grid.appendChild(d);
+  });
+}
+ 
+function updateStats(){
+  const unlocked = achievements.filter(a=>a.c).length;
+  achCount.textContent = unlocked;
+  points.textContent = unlocked*10;
+  level.textContent = Math.floor(unlocked/5)+1;
+  progress.style.width = Math.min(unlocked/50*100,100)+"%";
+ 
+  const ranks=[
+    ["Novice",0,"#66bb6a"],
+    ["Warrior",10,"#42a5f5"],
+    ["Elite",20,"#ab47bc"],
+    ["Master",30,"#ffa726"],
+    ["Legend",40,"#ef5350"],
+    ["Mythic",50,"#ff1744"]
+  ];
+  let r=ranks[0];
+  ranks.forEach(x=>{if(unlocked>=x[1]) r=x;});
+  rank.textContent=r[0];
+  rank.style.background=r[2];
+}
+ 
+// INIT
+loadAchievements();
+</script>
+</body>
+</html>

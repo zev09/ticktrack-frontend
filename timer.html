@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clock</title>
+ 
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+ 
+<style>
+ 
+*{box-sizing:border-box;font-family:'Poppins',sans-serif;margin:0;padding:0;}
+ 
+body{
+min-height:100vh;
+background:linear-gradient(135deg,#ffd1e8,#f48fb1,#ec407a);
+display:flex;
+justify-content:center;
+align-items:flex-start;
+padding:16px;
+}
+ 
+.container{
+background:#fff;
+width:100%;
+max-width:500px;
+border-radius:26px;
+padding:22px;
+box-shadow:0 20px 40px rgba(0,0,0,.25);
+}
+ 
+.top{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:15px;
+}
+ 
+.back{
+background:#f48fb1;
+border:none;
+color:#fff;
+padding:10px 18px;
+border-radius:14px;
+font-weight:600;
+cursor:pointer;
+}
+ 
+.tabs{
+display:flex;
+gap:6px;
+margin-bottom:15px;
+}
+ 
+.tabs button{
+flex:1;
+padding:8px;
+border:none;
+border-radius:12px;
+background:#fde4ec;
+cursor:pointer;
+font-weight:600;
+}
+ 
+.section{display:none}
+.section.active{display:block}
+ 
+.clock-circle{
+width:220px;
+height:220px;
+border-radius:50%;
+background:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+margin:10px auto;
+box-shadow:0 8px 20px rgba(0,0,0,.15);
+font-size:38px;
+font-weight:700;
+}
+ 
+.controls{
+display:flex;
+gap:10px;
+justify-content:center;
+margin:10px 0;
+}
+ 
+.controls button{
+padding:10px 16px;
+border:none;
+border-radius:14px;
+background:#ec407a;
+color:white;
+font-weight:600;
+cursor:pointer;
+}
+ 
+.custom-timer{
+display:flex;
+justify-content:center;
+gap:8px;
+}
+ 
+.custom-timer input{
+width:60px;
+padding:8px;
+border-radius:12px;
+border:1px solid #ccc;
+text-align:center;
+}
+ 
+.history{
+max-height:150px;
+overflow:auto;
+background:#fde4ec;
+border-radius:14px;
+padding:10px;
+margin-top:10px;
+}
+ 
+.alarm-list div{
+padding:6px;
+border-bottom:1px solid #f48fb1;
+display:flex;
+justify-content:space-between;
+}
+ 
+.sleep-box{
+background:#fde4ec;
+padding:12px;
+border-radius:16px;
+text-align:center;
+}
+ 
+</style>
+</head>
+ 
+<body>
+ 
+<div class="container">
+ 
+<div class="top">
+<button class="back" onclick="location.href='homepage1.html'">⬅ Back</button>
+<strong>Clock</strong>
+</div>
+ 
+<div class="tabs">
+<button onclick="showTab('timer')">⏲</button>
+<button onclick="showTab('stopwatch')">⏱</button>
+<button onclick="showTab('alarm')">⏰</button>
+<button onclick="showTab('word')">🕒</button>
+<button onclick="showTab('sleep')">😴</button>
+</div>
+ 
+<!-- TIMER -->
+<div id="timerSection" class="section active">
+ 
+<div class="clock-circle" id="timer">25:00</div>
+ 
+<div class="custom-timer">
+<input type="number" id="customTime" placeholder="Min">
+<button onclick="setCustom()">Set</button>
+</div>
+ 
+<div class="controls">
+<button onclick="startTimer()">Start</button>
+<button onclick="pauseTimer()">Pause</button>
+<button onclick="resetTimer()">Reset</button>
+</div>
+ 
+</div>
+ 
+<!-- STOPWATCH -->
+ 
+<div id="stopwatchSection" class="section">
+ 
+<div class="clock-circle" id="stopwatch">00:00:00</div>
+ 
+<div class="controls">
+<button onclick="startStopwatch()">Start</button>
+<button onclick="lapStopwatch()">Lap</button>
+<button onclick="resetStopwatch()">Reset</button>
+</div>
+ 
+<div class="history" id="laps"></div>
+ 
+</div>
+ 
+<!-- ALARM -->
+ 
+<div id="alarmSection" class="section">
+ 
+<input type="time" id="alarmTime">
+<input type="text" id="alarmLabel" placeholder="Label">
+ 
+<div class="controls">
+<button onclick="addAlarm()">Add Alarm</button>
+</div>
+ 
+<div class="alarm-list" id="alarmList"></div>
+ 
+</div>
+ 
+<!-- WORD CLOCK -->
+ 
+<div id="wordSection" class="section">
+ 
+<div class="clock-circle" id="wordClock">
+It's twelve o'clock
+</div>
+ 
+</div>
+ 
+<!-- SLEEP TRACKER -->
+ 
+<div id="sleepSection" class="section">
+ 
+<div class="sleep-box">
+ 
+<h3>Sleep Tracker</h3>
+ 
+<label>Sleep Time</label>
+<input type="time" id="sleepStart">
+ 
+<label>Wake Time</label>
+<input type="time" id="sleepEnd">
+ 
+<div class="controls">
+<button onclick="saveSleep()">Save</button>
+</div>
+ 
+<div id="sleepResult"></div>
+ 
+</div>
+ 
+</div>
+ 
+</div>
+ 
+<audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+ 
+<script>
+ 
+const token = localStorage.getItem("token")
+ 
+function showTab(tab){
+ 
+document.querySelectorAll(".section").forEach(s=>{
+s.classList.remove("active")
+})
+ 
+if(tab==="timer") document.getElementById("timerSection").classList.add("active")
+if(tab==="stopwatch") document.getElementById("stopwatchSection").classList.add("active")
+if(tab==="alarm") document.getElementById("alarmSection").classList.add("active")
+if(tab==="word") document.getElementById("wordSection").classList.add("active")
+if(tab==="sleep") document.getElementById("sleepSection").classList.add("active")
+ 
+}
+ 
+let timer=1500
+let interval
+let running=false
+ 
+function updateDisplay(){
+let m=Math.floor(timer/60)
+let s=timer%60
+timerEl.textContent=`${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`
+}
+ 
+const timerEl=document.getElementById("timer")
+ 
+function startTimer(){
+ 
+if(running) return
+ 
+running=true
+ 
+interval=setInterval(()=>{
+ 
+if(timer>0){
+timer--
+updateDisplay()
+}else{
+ 
+clearInterval(interval)
+running=false
+ 
+document.getElementById("alarmSound").play()
+ 
+fetch("http://localhost:5000/api/timer/complete",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+body:JSON.stringify({duration:25})
+})
+ 
+}
+ 
+},1000)
+ 
+}
+ 
+function pauseTimer(){clearInterval(interval);running=false}
+ 
+function resetTimer(){
+clearInterval(interval)
+running=false
+timer=1500
+updateDisplay()
+}
+ 
+function setCustom(){
+timer=document.getElementById("customTime").value*60
+updateDisplay()
+}
+ 
+updateDisplay()
+ 
+let sw=0
+let swInt
+let laps=[]
+ 
+function startStopwatch(){
+ 
+swInt=setInterval(()=>{
+sw++
+updateSW()
+},1000)
+ 
+}
+ 
+function updateSW(){
+ 
+let h=Math.floor(sw/3600)
+let m=Math.floor((sw%3600)/60)
+let s=sw%60
+ 
+document.getElementById("stopwatch").textContent=
+`${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`
+ 
+}
+ 
+function lapStopwatch(){
+ 
+laps.push(sw)
+ 
+let div=document.createElement("div")
+div.textContent="Lap "+laps.length+" - "+sw+" sec"
+ 
+document.getElementById("laps").appendChild(div)
+ 
+}
+ 
+function resetStopwatch(){
+ 
+clearInterval(swInt)
+ 
+fetch("http://localhost:5000/api/stopwatch/save",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+body:JSON.stringify({duration:sw,laps:laps})
+})
+ 
+sw=0
+laps=[]
+updateSW()
+document.getElementById("laps").innerHTML=""
+ 
+}
+ 
+let alarms=[]
+ 
+async function loadAlarms(){
+ 
+const res=await fetch("http://localhost:5000/api/alarms",{headers:{Authorization:"Bearer "+token}})
+alarms=await res.json()
+ 
+renderAlarms()
+ 
+}
+ 
+function renderAlarms(){
+ 
+const list=document.getElementById("alarmList")
+list.innerHTML=""
+ 
+alarms.forEach(a=>{
+ 
+let div=document.createElement("div")
+div.innerHTML=`${a.time} - ${a.label}`
+ 
+let del=document.createElement("button")
+del.textContent="X"
+ 
+del.onclick=async()=>{
+ 
+await fetch("http://localhost:5000/api/alarms/"+a._id,{
+method:"DELETE",
+headers:{Authorization:"Bearer "+token}
+})
+ 
+loadAlarms()
+ 
+}
+ 
+div.appendChild(del)
+list.appendChild(div)
+ 
+})
+ 
+}
+ 
+async function addAlarm(){
+ 
+let time=document.getElementById("alarmTime").value
+let label=document.getElementById("alarmLabel").value
+ 
+await fetch("http://localhost:5000/api/alarms",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+body:JSON.stringify({time,label})
+})
+ 
+loadAlarms()
+ 
+}
+ 
+setInterval(()=>{
+ 
+let now=new Date()
+ 
+let h=now.getHours().toString().padStart(2,"0")
+let m=now.getMinutes().toString().padStart(2,"0")
+ 
+let current=`${h}:${m}`
+ 
+alarms.forEach(a=>{
+ 
+if(a.time===current){
+ 
+document.getElementById("alarmSound").play()
+ 
+new Notification("Alarm",{body:a.label})
+ 
+}
+ 
+})
+ 
+},10000)
+ 
+function updateWordClock(){
+ 
+let h=new Date().getHours()
+ 
+let words=[
+"Twelve","One","Two","Three","Four","Five",
+"Six","Seven","Eight","Nine","Ten","Eleven"
+]
+ 
+document.getElementById("wordClock").textContent=
+"It's "+words[h%12]+" o'clock"
+ 
+}
+ 
+setInterval(updateWordClock,60000)
+updateWordClock()
+ 
+async function saveSleep(){
+ 
+let start=document.getElementById("sleepStart").value
+let end=document.getElementById("sleepEnd").value
+ 
+await fetch("http://localhost:5000/api/sleep",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+body:JSON.stringify({start,end})
+})
+ 
+document.getElementById("sleepResult").innerText="Sleep recorded"
+ 
+}
+ 
+loadAlarms()
+ 
+</script>
+ 
+</body>
+</html>

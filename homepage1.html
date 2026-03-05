@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Productivity Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+ 
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+ 
+<style>
+:root{
+  --bg1:#fff;
+  --bg2:#f8c8dc;
+  --bg3:#e75480;
+  --card:#ffffffdd;
+  --primary:#e75480;
+  --primary2:#f8c8dc;
+  --text:#4a2c3a;
+  --shadow:rgba(231,84,128,.25);
+}
+ 
+.dark{
+  --bg1:#2b1b24;
+  --bg2:#3a1f2d;
+  --bg3:#5c2a3f;
+  --card:#3a1f2ddd;
+  --primary:#ff6fa5;
+  --primary2:#e75480;
+  --text:#fff;
+}
+ 
+*{box-sizing:border-box;margin:0;padding:0;font-family:Poppins,sans-serif;}
+ 
+body{
+  min-height:100vh;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+  color:var(--text);
+  padding:20px;
+  transition:.4s;
+}
+ 
+.container{
+  max-width:1100px;
+  margin:auto;
+}
+ 
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:25px;
+}
+ 
+.profile{
+  width:48px;height:48px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  cursor:pointer;
+  position:relative;
+}
+ 
+/* DROPDOWN */
+.dropdown{
+  position:absolute;
+  top:60px; right:0;
+  background:var(--card);
+  border-radius:15px;
+  box-shadow:0 15px 30px var(--shadow);
+  overflow:hidden;
+  opacity:0;
+  transform:translateY(-10px);
+  pointer-events:none;
+  transition:.3s;
+  width:180px;
+}
+ 
+.dropdown.active{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+}
+ 
+.dropdown button{
+  width:100%;
+  padding:12px 15px;
+  border:none;
+  background:none;
+  text-align:left;
+  cursor:pointer;
+}
+ 
+.dropdown button:hover{
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  color:#fff;
+}
+ 
+/* WELCOME */
+.welcome{
+  background:var(--card);
+  padding:25px;
+  border-radius:25px;
+  box-shadow:0 15px 30px var(--shadow);
+  margin-bottom:25px;
+}
+ 
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+}
+ 
+.card{
+  background:var(--card);
+  padding:22px;
+  border-radius:22px;
+  cursor:pointer;
+  box-shadow:0 10px 25px var(--shadow);
+  transition:.3s;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-weight:600;
+  font-size:16px;
+  text-align:center;
+}
+ 
+.card:hover{
+  transform:translateY(-6px);
+}
+ 
+.card.highlight{
+  outline:3px solid var(--primary);
+  transform:scale(1.05);
+}
+ 
+/* QUICK */
+.quick{
+  margin-top:25px;
+  display:flex;
+  gap:15px;
+}
+ 
+.quick button{
+  flex:1;
+  padding:15px;
+  border:none;
+  border-radius:18px;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  color:#fff;
+  font-size:15px;
+  cursor:pointer;
+}
+ 
+/* FOOTER */
+.footer{
+  margin-top:25px;
+  text-align:center;
+  font-size:12px;
+  opacity:.6;
+}
+ 
+@media(max-width:768px){
+  .grid{grid-template-columns:1fr 1fr;}
+  .quick{flex-direction:column;}
+}
+ 
+@media(max-width:480px){
+  .grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+ 
+<body>
+<div class="container">
+ 
+  <div class="header">
+    <div>
+      <b id="greet"></b><br>
+      <small id="date"></small>
+    </div>
+ 
+    <div class="profile" onclick="toggleDropdown()">
+      <span id="initial"></span>
+      <div class="dropdown" id="profileDropdown">
+        <button onclick="goProfile()">View Profile</button>
+        <button onclick="goSettings()">Settings</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="welcome">
+    <h2> TickTrack </h2>
+    <p>Organize your tasks. Focus better. Achieve more.</p>
+  </div>
+ 
+  <div class="grid">
+    <div class="card" data-page="tasks" onclick="nav('tasks.html')"> Tasks</div>
+    <div class="card" data-page="calendar" onclick="nav('calendar.html')"> Calendar</div>
+    <div class="card" data-page="notes" onclick="nav('notes.html')"> Notepad</div>
+    <div class="card" data-page="timer" onclick="nav('timer.html')"> Timer</div>
+    <div class="card" data-page="reflection" onclick="nav('goals.html')"> Reflection</div>
+    <div class="card" data-page="about" onclick="nav('about.html')">Entertainment</div>
+  </div>
+ 
+  <div class="quick">
+    <button onclick="toggleDark()"> Toggle Dark Mode</button>
+    
+  </div>
+ 
+  <div class="footer">
+    TickTrack
+  </div>
+ 
+</div>
+ 
+<script>
+/* GET LOGGED IN USER */
+const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+ 
+if(!currentUser){
+  window.location.href = "login.html";
+}
+ 
+/* DISPLAY USER INFO */
+document.getElementById("greet").innerText =
+  "Hello, " + currentUser.username + " 👋";
+ 
+document.getElementById("initial").innerText =
+  currentUser.username.charAt(0).toUpperCase();
+ 
+document.getElementById("date").innerText =
+  new Date().toDateString();
+ 
+/* DROPDOWN */
+function toggleDropdown(){
+  document.getElementById("profileDropdown")
+    .classList.toggle("active");
+}
+ 
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".profile")){
+    document.getElementById("profileDropdown")
+      .classList.remove("active");
+  }
+});
+ 
+/* NAVIGATION */
+function goProfile(){ location.href="viewprofile.html"; }
+function goSettings(){ location.href="settings.html"; }
+ 
+function nav(page){
+  localStorage.setItem("lastPage", page.replace(".html",""));
+  location.href = page;
+}
+ 
+function toggleDark(){
+  document.body.classList.toggle("dark");
+}
+ 
+function logout(){
+  localStorage.removeItem("currentUser");
+  localStorage.removeItem("token");
+  window.location.href = "login.html";
+}
+ 
+/* HIGHLIGHT LAST VISITED */
+const lastPage = localStorage.getItem("lastPage");
+if(lastPage){
+  document.querySelectorAll(".card").forEach(card=>{
+    if(card.dataset.page === lastPage){
+      card.classList.add("highlight");
+    }
+  });
+}
+</script>
+ 
+</body>
+</html>

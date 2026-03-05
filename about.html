@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Game Hub</title>
+ 
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+ 
+<style>
+:root{
+  --primary:#ff6fb5;
+  --secondary:#ffe5f3;
+  --white:#ffffff;
+  --glass:rgba(255,255,255,0.2);
+  --text:#333;
+  --shadow:0 8px 25px rgba(0,0,0,0.15);
+}
+*{box-sizing:border-box;font-family:'Poppins',sans-serif;margin:0;padding:0;}
+body{
+  min-height:100vh;
+  background:linear-gradient(135deg,#ffd1e8,#f48fb1,#ec407a);
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:16px;
+}
+.container{
+  background:#fff;
+  width:100%;
+  max-width:900px;
+  border-radius:26px;
+  padding:22px;
+  box-shadow:var(--shadow);
+}
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+header h1{
+  font-size:1.8rem;
+  color:var(--primary);
+}
+.back-btn{
+  background:var(--secondary);
+  color:var(--primary);
+  padding:8px 14px;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:600;
+  transition:0.2s;
+}
+.back-btn:hover{transform:scale(1.05);}
+.game-select{
+  display:flex;
+  gap:10px;
+  margin-bottom:20px;
+}
+.game-select button{
+  flex:1;
+  padding:10px 18px;
+  border:none;
+  border-radius:14px;
+  background:var(--secondary);
+  cursor:pointer;
+  font-weight:600;
+  transition:0.3s;
+}
+.game-select button.active{background:var(--primary); color:white;}
+.game-section{display:none;}
+.game-section.active{display:block;}
+.stats{display:flex;justify-content:space-between;margin-bottom:15px;flex-wrap:wrap;gap:10px;}
+.stat{background:#fde4ec;padding:12px 16px;border-radius:16px;text-align:center;flex:1;min-width:80px;}
+.stat span{font-size:18px;font-weight:600;color:var(--primary);}
+.controls{display:flex;gap:10px;justify-content:center;margin-bottom:15px;flex-wrap:wrap;}
+button.control-btn{padding:10px 16px;border:none;border-radius:14px;background:var(--primary);color:white;font-weight:600;cursor:pointer;transition:0.2s;}
+button.control-btn:hover{transform:scale(1.05);}
+input, select{padding:8px 12px;border-radius:12px;border:none;text-align:center;}
+ 
+/* === GRID & CARDS === */
+.grid{display:grid;gap:10px;justify-content:center;}
+.card{
+  position:relative;
+  transform-style:preserve-3d;
+  transition:0.6s;
+  cursor:pointer;
+  border-radius:16px;
+  height:80px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2rem;
+  backface-visibility:hidden;
+  box-shadow:var(--shadow);
+}
+.card-inner.front{
+  background:#fff;
+  width:100%;
+  height:100%;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2rem;
+}
+.card-inner.back{
+  background:#fff0f7;
+  width:100%;
+  height:100%;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2rem;
+}
+.card.flipped{transform:rotateY(180deg);}
+.card.matched .front{
+  background:#d8f3dc;
+  transform:scale(1.1);
+  transition:0.3s;
+}
+ 
+.confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;}
+.confetti div{position:absolute;width:8px;height:8px;background:white;animation:fall 3s linear infinite;}
+@keyframes fall{0%{transform:translateY(-10px);}100%{transform:translateY(100vh);}}
+ 
+.history{max-height:150px;overflow:auto;background:#fde4ec;border-radius:14px;padding:10px;margin-top:10px;}
+ 
+.emoji-grid{display:grid;gap:6px;justify-content:center;}
+.emoji-tile{width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:2rem;border-radius:12px;background:#fff;box-shadow:var(--shadow);cursor:pointer;transition:0.2s;}
+.emoji-tile:hover{transform:scale(1.1);}
+ 
+/* Responsive adjustments for Memory Together cards */
+@media(max-width:900px){.grid{grid-template-columns:repeat(auto-fit,minmax(70px,1fr));}}
+@media(max-width:600px){.grid{grid-template-columns:repeat(auto-fit,minmax(60px,1fr));}}
+@media(max-width:400px){.grid{grid-template-columns:repeat(auto-fit,minmax(50px,1fr));}}
+</style>
+</head>
+<body>
+ 
+<div class="container">
+<header>
+  <button class="back-btn" onclick="goBack()">← Back</button>
+  <h1>🎮 Mini Game Hub</h1>
+</header>
+ 
+<div class="game-select">
+  <button id="memBtn" class="active" onclick="selectGame('memory')">Memory Together</button>
+  <button id="emojiBtn" onclick="selectGame('emoji')">Emoji Match</button>
+</div>
+ 
+<!-- Memory Together Section -->
+<div id="memorySection" class="game-section active">
+<div class="controls">
+<input id="playerA" placeholder="Player A">
+<input id="playerB" placeholder="Player B">
+<select id="difficulty">
+  <option value="8">Easy</option>
+  <option value="12">Medium</option>
+  <option value="16">Hard</option>
+</select>
+<button class="control-btn" onclick="startMemory()">Start</button>
+<button class="control-btn" onclick="restartMemory()">Restart</button>
+</div>
+ 
+<div class="stats">
+  <div class="stat"><span id="memPoints">0</span> Points</div>
+  <div class="stat"><span id="memStreak">0</span> Streak</div>
+  <div class="stat"><span id="memTimer">0</span> Sec</div>
+  <div class="stat"><span id="memCombo">0</span> Combo</div>
+</div>
+ 
+<div class="grid" id="memGrid"></div>
+<div class="message" id="memMessage"></div>
+<div class="history" id="memLeaderboard"><strong>Leaderboard</strong><div id="memBoardList"></div></div>
+</div>
+ 
+<!-- Emoji Match Section -->
+<div id="emojiSection" class="game-section">
+<div class="controls">
+<input id="emojiPlayer" placeholder="Player Name">
+<select id="emojiLevel">
+  <option value="1">Level 1</option>
+  <option value="2">Level 2</option>
+  <option value="3">Level 3</option>
+  <option value="4">Level 4</option>
+  <option value="5">Level 5</option>
+  <option value="6">Level 6</option>
+  <option value="7">Level 7</option>
+  <option value="8">Level 8</option>
+  <option value="9">Level 9</option>
+  <option value="10">Level 10</option>
+</select>
+<button class="control-btn" onclick="startEmoji()">Start Emoji Match</button>
+</div>
+ 
+<div class="stats">
+  <div class="stat"><span id="emojiPoints">0</span> Points</div>
+  <div class="stat"><span id="emojiLevelDisp">1</span> Level</div>
+  <div class="stat"><span id="emojiCombo">0</span> Combo</div>
+</div>
+ 
+<div class="emoji-grid" id="emojiGrid"></div>
+<div class="message" id="emojiMessage"></div>
+<div class="history" id="emojiLeaderboard"><strong>Leaderboard</strong><div id="emojiBoardList"></div></div>
+</div>
+ 
+</div>
+<div class="confetti" id="confetti"></div>
+ 
+<script>
+// === Back button ===
+function goBack(){window.location.href='homepage1.html';}
+ 
+// === Game Selection ===
+function selectGame(game){
+  document.getElementById('memorySection').classList.remove('active');
+  document.getElementById('emojiSection').classList.remove('active');
+  document.getElementById('memBtn').classList.remove('active');
+  document.getElementById('emojiBtn').classList.remove('active');
+  if(game==='memory'){document.getElementById('memorySection').classList.add('active');document.getElementById('memBtn').classList.add('active');}
+  else{document.getElementById('emojiSection').classList.add('active');document.getElementById('emojiBtn').classList.add('active');}
+}
+ 
+// === Memory Together logic ===
+const memEmotions = ['😊','😢','😡','😍','😱','😎','🥰','🤔','😭','😴','🤩','😤','😇','😬','😜','😌'];
+let memCards=[],memFlipped=[],memMatched=0,memSeconds=0,memTimerInt,memCombo=0,memPoints=0,memStreak=0;
+ 
+function updateMemStats(){
+  document.getElementById('memPoints').innerText=memPoints;
+  document.getElementById('memStreak').innerText=memStreak;
+  document.getElementById('memTimer').innerText=memSeconds;
+  document.getElementById('memCombo').innerText=memCombo;
+}
+function memTimerStart(){clearInterval(memTimerInt);memSeconds=0;memTimerInt=setInterval(()=>{memSeconds++;updateMemStats();},1000);}
+function startMemory(){
+  const playerA=document.getElementById('playerA').value.trim()||'PlayerA';
+  const playerB=document.getElementById('playerB').value.trim()||'PlayerB';
+  const pairs=parseInt(document.getElementById('difficulty').value);
+  memCards=[...memEmotions.slice(0,pairs/2),...memEmotions.slice(0,pairs/2)].sort(()=>0.5-Math.random());
+  const grid=document.getElementById('memGrid');grid.innerHTML='';memMatched=0;memFlipped=[];memCombo=0;memPoints=0;document.getElementById('memMessage').innerText='';
+  memCards.forEach(e=>{
+    const card=document.createElement('div');card.className='card';card.dataset.emotion=e;
+    const front=document.createElement('div');front.className='card-inner front';front.innerText=e;
+    const back=document.createElement('div');back.className='card-inner back';
+    card.appendChild(front);card.appendChild(back);
+    card.onclick=()=>memFlip(card);
+    grid.appendChild(card);
+  });
+  memTimerStart();updateMemStats();
+  renderMemBoard(playerA + '_' + playerB);
+}
+ 
+function memFlip(card){
+  if(card.classList.contains('matched')||memFlipped.length===2)return;
+  card.classList.add('flipped');memFlipped.push(card);playSound(300);
+  if(memFlipped.length===2)setTimeout(memCheck,600);
+}
+ 
+function memCheck(){
+  const[a,b]=memFlipped;
+  if(a.dataset.emotion===b.dataset.emotion){a.classList.add('matched');b.classList.add('matched');memMatched+=2;memCombo++;memPoints+=5+(memCombo*2);playSound(600);}
+  else{a.classList.remove('flipped');b.classList.remove('flipped');memCombo=0;}
+  memFlipped=[];updateMemStats();
+  if(memMatched===memCards.length)memWin();
+}
+ 
+function memWin(){
+  clearInterval(memTimerInt);memStreak++;document.getElementById('memMessage').innerText=`🎉 Amazing!`;
+  launchConfetti();saveMemLeaderboard();
+}
+ 
+function restartMemory(){clearInterval(memTimerInt);startMemory();}
+ 
+function saveMemLeaderboard(){
+  const playerKey=document.getElementById('playerA').value.trim()+'_'+document.getElementById('playerB').value.trim()||'PlayerA_PlayerB';
+  let board=JSON.parse(localStorage.getItem('memLeaderboard_'+playerKey)||'[]');
+  board.push({time:memSeconds,points:memPoints});board.sort((a,b)=>a.time-b.time);board=board.slice(0,5);
+  localStorage.setItem('memLeaderboard_'+playerKey,JSON.stringify(board));renderMemBoard(playerKey);
+}
+ 
+function renderMemBoard(playerKey){
+  if(!playerKey) playerKey='PlayerA_PlayerB';
+  let board=JSON.parse(localStorage.getItem('memLeaderboard_'+playerKey)||'[]');const list=document.getElementById('memBoardList');list.innerHTML='';
+  board.forEach(b=>{list.innerHTML+=`<div>${b.points} pts (${b.time}s)</div>`;});
+}
+ 
+// === Emoji Match logic ===
+const emojiList=['🍎','🍌','🍒','🍇','🍉','🍋','🍓','🥝'];
+let emojiGrid=[],emojiPoints=0,emojiLevel=1,emojiCombo=0;
+function startEmoji(){
+  const player=document.getElementById('emojiPlayer').value.trim()||'PlayerEmoji';
+  emojiLevel=parseInt(document.getElementById('emojiLevel').value);
+  emojiPoints=0;emojiCombo=0;document.getElementById('emojiMessage').innerText='';
+  generateEmojiGrid(emojiLevel);
+  renderEmojiBoard(player);
+}
+function generateEmojiGrid(level){
+  const grid=document.getElementById('emojiGrid');
+  grid.innerHTML='';
+  let size=Math.min(6+level,10);
+  grid.style.gridTemplateColumns=`repeat(${size},60px)`;
+  emojiGrid=[];
+  for(let i=0;i<size*size;i++){
+    const tile=document.createElement('div');
+    tile.className='emoji-tile';tile.dataset.index=i;
+    tile.innerText=emojiList[Math.floor(Math.random()*emojiList.length)];
+    tile.onclick=()=>emojiClick(tile);
+    grid.appendChild(tile);emojiGrid.push(tile);
+  }
+  updateEmojiStats();
+}
+let selectedTile=null;
+function emojiClick(tile){
+  if(selectedTile===null){selectedTile=tile;tile.style.border='2px solid var(--primary)';return;}
+  swapTiles(selectedTile,tile);selectedTile.style.border='';selectedTile=null;
+  checkMatches();
+}
+function swapTiles(a,b){const temp=a.innerText;a.innerText=b.innerText;b.innerText=temp;}
+function checkMatches(){
+  const size=Math.sqrt(emojiGrid.length)|0;
+  for(let i=0;i<emojiGrid.length;i++){
+    let hMatch=[emojiGrid[i]];let vMatch=[emojiGrid[i]];
+    let row=i%size,col=Math.floor(i/size);
+    for(let j=1;j<3;j++){if(row+j<size&&emojiGrid[i+j].innerText===emojiGrid[i].innerText)hMatch.push(emojiGrid[i+j]);}
+    if(hMatch.length>=3){hMatch.forEach(t=>t.innerText='');emojiPoints+=hMatch.length*10;emojiCombo++;updateEmojiStats();}
+    for(let j=1;j<3;j++){if(col+j<size&&emojiGrid[i+j*size].innerText===emojiGrid[i].innerText)vMatch.push(emojiGrid[i+j*size]);}
+    if(vMatch.length>=3){vMatch.forEach(t=>t.innerText='');emojiPoints+=vMatch.length*10;emojiCombo++;updateEmojiStats();}
+  }
+}
+function updateEmojiStats(){document.getElementById('emojiPoints').innerText=emojiPoints;document.getElementById('emojiCombo').innerText=emojiCombo;document.getElementById('emojiLevelDisp').innerText=emojiLevel;}
+function saveEmojiLeaderboard(){
+  const player=document.getElementById('emojiPlayer').value.trim()||'PlayerEmoji';
+  let board=JSON.parse(localStorage.getItem('emojiLeaderboard_'+player)||'[]');
+  board.push({level:emojiLevel,points:emojiPoints});
+  board.sort((a,b)=>b.points-a.points);board=board.slice(0,5);localStorage.setItem('emojiLeaderboard_'+player,JSON.stringify(board));
+  renderEmojiBoard(player);
+}
+function renderEmojiBoard(player){
+  if(!player) player='PlayerEmoji';
+  let board=JSON.parse(localStorage.getItem('emojiLeaderboard_'+player)||'[]');const list=document.getElementById('emojiBoardList');list.innerHTML='';
+  board.forEach(b=>{list.innerHTML+=`<div>Level ${b.level} - ${b.points} pts</div>`;});
+}
+ 
+// === Shared Utility ===
+function launchConfetti(){
+  const container=document.getElementById('confetti');
+  for(let i=0;i<80;i++){
+    const div=document.createElement('div');
+    div.style.left=Math.random()*100+'%';
+    div.style.animationDuration=(2+Math.random()*3)+'s';
+    container.appendChild(div);setTimeout(()=>div.remove(),3000);
+  }
+}
+function playSound(freq){
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const osc=ctx.createOscillator();
+  osc.type='sine';
+  osc.frequency.value=freq;
+  osc.connect(ctx.destination);
+  osc.start();setTimeout(()=>osc.stop(),100);
+}
+</script>
+ 
+</body>
+</html>

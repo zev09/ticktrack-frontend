@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;font-family:Poppins,sans-serif;margin:0;padding:0;}
+body{min-height:100vh;background:linear-gradient(135deg,#ffd1e8,#f48fb1,#ec407a);display:flex;justify-content:center;padding:16px;}
+.container{background:#fff;width:100%;max-width:1100px;border-radius:26px;padding:22px;box-shadow:0 20px 40px rgba(0,0,0,.25);}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.back{background:#f48fb1;border:none;color:#fff;padding:10px 18px;border-radius:14px;font-weight:600;cursor:pointer;transition:.2s;}
+.back:hover{opacity:.9;transform:scale(1.03);}
+.profile{display:flex;gap:24px;align-items:center;margin-top:20px;flex-wrap:wrap;}
+.avatar-box{width:100px;height:100px;}
+.avatar{width:100%;height:100%;border-radius:50%;border:5px solid #f48fb1;object-fit:cover;}
+.info h2{margin:0;font-size:22px;color:#4a2c3a;}
+.rank{margin-top:6px;padding:6px 16px;border-radius:20px;color:#fff;display:inline-block;font-weight:600;background:linear-gradient(90deg,#f48fb1,#ec407a);}
+.settings-features{margin-top:30px;display:flex;flex-direction:column;gap:20px;}
+.feature{display:flex;justify-content:space-between;align-items:center;background:#fde4ec;padding:14px 20px;border-radius:18px;cursor:pointer;transition:.3s;box-shadow:0 4px 10px rgba(0,0,0,0.08);}
+.feature:hover{background:#fce4ec;transform:translateY(-2px);}
+.feature label{font-weight:600;color:#4a2c3a;}
+.toggle-switch{position:relative;width:50px;height:28px;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:34px;transition:.4s;}
+.slider:before{position:absolute;content:"";height:22px;width:22px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.4s;}
+input:checked + .slider{background:#f48fb1;}
+input:checked + .slider:before{transform:translateX(22px);}
+.select-box{background:#fff;border:2px solid #f48fb1;border-radius:18px;padding:6px 12px;cursor:pointer;font-weight:600;color:#4a2c3a;transition:.2s;}
+.select-box:hover{border-color:#ec407a;}
+.switch-account{margin-top:20px;background:#ec407a;color:#fff;border:none;padding:12px 18px;border-radius:18px;font-weight:600;cursor:pointer;transition:.3s;width:100%;font-size:16px;}
+.switch-account:hover{opacity:.9;transform:scale(1.02);}
+@media(max-width:600px){.profile{text-align:center;justify-content:center;}.settings-features{gap:14px;}}
+</style>
+</head>
+<body>
+<div class="container">
+ 
+  <!-- TOP BAR -->
+  <div class="top">
+    <button class="back" onclick="location.href='homepage1.html'">⬅ Back</button>
+    <strong style="font-size:1.3rem;color:#4a2c3a;">Settings</strong>
+  </div>
+ 
+  <!-- PROFILE -->
+  <div class="profile">
+    <div class="avatar-box">
+      <img id="avatar" class="avatar">
+    </div>
+    <div class="info">
+      <h2 id="username">User</h2>
+      <div id="rank" class="rank">Novice</div>
+    </div>
+  </div>
+ 
+  <!-- SETTINGS -->
+  <div class="settings-features">
+    <!-- Notifications -->
+    <div class="feature">
+      <label for="notifToggle">Notifications</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="notifToggle">
+        <span class="slider"></span>
+      </div>
+    </div>
+ 
+    <!-- Daily Reminders -->
+    <div class="feature">
+      <label for="reminderToggle">Daily Reminders</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="reminderToggle">
+        <span class="slider"></span>
+      </div>
+    </div>
+ 
+    <!-- Account Privacy -->
+    <div class="feature">
+      <label for="privacySelect">Account Privacy</label>
+      <select id="privacySelect" class="select-box">
+        <option value="Public">Public</option>
+        <option value="Private">Private</option>
+      </select>
+    </div>
+ 
+    <!-- Theme Color -->
+    <div class="feature">
+      <label for="themeSelect">Theme Color</label>
+      <select id="themeSelect" class="select-box">
+        <option value="Pink">Pink</option>
+        <option value="Purple">Purple</option>
+        <option value="Blue">Blue</option>
+      </select>
+    </div>
+ 
+    <!-- Sound Effects -->
+    <div class="feature">
+      <label for="soundToggle">Sound Effects</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="soundToggle">
+        <span class="slider"></span>
+      </div>
+    </div>
+ 
+    <!-- Switch Account -->
+    <button class="switch-account" id="switchBtn">Switch Account</button>
+  </div>
+ 
+</div>
+ 
+<script>
+// Profile info
+const username = document.getElementById("username");
+const rank = document.getElementById("rank");
+const avatar = document.getElementById("avatar");
+username.textContent = localStorage.getItem("username") || "Guest";
+rank.textContent = localStorage.getItem("rank") || "Novice";
+avatar.src = localStorage.getItem("avatar") || "https://i.imgur.com/8KmHelping.png";
+ 
+// Feature elements
+const notifToggle = document.getElementById("notifToggle");
+const reminderToggle = document.getElementById("reminderToggle");
+const privacySelect = document.getElementById("privacySelect");
+const themeSelect = document.getElementById("themeSelect");
+const soundToggle = document.getElementById("soundToggle");
+const switchBtn = document.getElementById("switchBtn");
+ 
+// Load saved settings
+notifToggle.checked = localStorage.getItem("notifications") === "true";
+reminderToggle.checked = localStorage.getItem("dailyReminders") === "true";
+privacySelect.value = localStorage.getItem("privacy") || "Public";
+themeSelect.value = localStorage.getItem("themeColor") || "Pink";
+soundToggle.checked = localStorage.getItem("soundEffects") === "true";
+ 
+// Save on change
+notifToggle.addEventListener("change",()=>{localStorage.setItem("notifications",notifToggle.checked);});
+reminderToggle.addEventListener("change",()=>{localStorage.setItem("dailyReminders",reminderToggle.checked);});
+privacySelect.addEventListener("change",()=>{localStorage.setItem("privacy",privacySelect.value);});
+themeSelect.addEventListener("change",()=>{localStorage.setItem("themeColor",themeSelect.value);});
+soundToggle.addEventListener("change",()=>{localStorage.setItem("soundEffects",soundToggle.checked);});
+ 
+// Switch account functionality
+switchBtn.addEventListener("click",()=>{
+  localStorage.removeItem("currentUser");
+  window.location.href = "login.html";
+});
+</script>
+</body>
+</html>

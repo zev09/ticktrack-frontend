@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emotion Calendar</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* === Your existing styles === */
+body { font-family: Poppins, sans-serif; background: linear-gradient(135deg, #ffe6f0, #f7b2d9, #e48ac7); min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+.container { width: 900px; max-width: 100%; background: #fff; border-radius: 25px; padding: 25px 35px; box-shadow: 0 15px 30px rgba(0,0,0,.15);}
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px;}
+.header button { background: #f3a1c8; border: none; padding: 8px 15px; border-radius: 12px; font-size: 18px; cursor: pointer;}
+.header h1 { margin: 0; font-size: 28px; color: #c04a91;}
+.menu { display: flex; gap: 10px; margin-bottom: 15px;}
+.menu button { flex: 1; border: none; padding: 10px; border-radius: 14px; font-weight: 600; cursor: pointer; background: #ffd6eb; color: #b23a7e; transition: all .25s ease;}
+.menu button.active { background: linear-gradient(135deg,#f7b2d9,#e48ac7); color: white; transform: scale(1.02);}
+.days { display: grid; grid-template-columns: repeat(7, 1fr); background: linear-gradient(90deg, #f7b2d9, #e48ac7); padding: 10px 0; border-radius: 15px; text-align: center; font-weight: bold; color: #fff;}
+.calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-top: 15px;}
+.date { height: 95px; background: #fff0f7; border-radius: 18px; padding: 8px; position: relative; cursor: pointer; animation: popIn .25s ease; display: flex; flex-direction: column; justify-content: space-between; align-items: center;}
+.date.locked { background: #eee; color: #aaa; cursor: not-allowed;}
+.date:hover:not(.locked) { background: #ffd6eb;}
+.date span { font-weight: bold; font-size: 18px;}
+.today { outline: 3px solid #e48ac7;}
+.monster { font-size: 30px; animation: bounce .35s ease;}
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; justify-content: center; align-items: center;}
+.modal-content { background: #fff; padding: 20px; border-radius: 18px; width: 300px; text-align: center;}
+.emotions { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; font-size: 32px; margin: 15px 0;}
+.btn { background: #f3a1c8; padding: 10px; border-radius: 12px; margin-top: 8px; cursor: pointer;}
+.analyzer { background: linear-gradient(135deg,#fff0f7,#ffe1ef); box-shadow: inset 0 0 0 2px #ffd6eb; border-radius: 18px; padding: 25px; text-align: center;}
+.analyzer h3 { font-size: 24px; margin-bottom: 15px;}
+#analysisText { font-size: 18px; margin-bottom: 10px;}
+.progress { background: #ffd6eb; border-radius: 10px; overflow: hidden; height: 12px; margin: 8px 0;}
+.progress div { height: 100%; background: #c04a91; width: 0%; transition: width .5s ease;}
+.stats { display: flex; justify-content: center; gap: 20px; font-size: 16px; margin-top: 10px;}
+#bestDay, #worstDay { font-size: 16px; margin-top: 6px;}
+.chart-box { margin-top: 20px; padding: 15px; background: white; border-radius: 16px; box-shadow: 0 8px 18px rgba(0,0,0,.08);}
+@keyframes popIn { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes bounce { 0% { transform: scale(0.8); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@keyframes fadeUp { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+.section { display:none; animation: fadeUp .35s ease;}
+.section.active{ display:block;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <button onclick="location.href='homepage1.html'">⬅ Back</button>
+    <button onclick="changeMonth(-1)">◀</button>
+    <h1 id="monthYear"></h1>
+    <button onclick="changeMonth(1)">▶</button>
+  </div>
+ 
+  <div class="menu">
+    <button id="tabCalendar" class="active" onclick="showSection('calendar')">📅 Calendar</button>
+    <button id="tabAnalyzer" onclick="showSection('analyzer')">📊 Analyzer</button>
+  </div>
+ 
+  <div id="calendarSection" class="section active">
+    <div class="days">
+      <div>Sun</div><div>Mon</div><div>Tue</div>
+      <div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+    </div>
+    <div class="calendar" id="calendar"></div>
+  </div>
+ 
+  <div id="analyzerSection" class="section">
+    <div class="analyzer">
+      <h3>Monthly Mood Analyzer</h3>
+      <p id="analysisText">No data yet.</p>
+      <div class="progress"><div id="moodBar"></div></div>
+      <div class="stats">
+        <div>Happy: <span id="happy">0</span></div>
+        <div>Love: <span id="love">0</span></div>
+        <div>Angry: <span id="angry">0</span></div>
+        <div>Sad: <span id="sad">0</span></div>
+        <div>Tired: <span id="tired">0</span></div>
+      </div>
+      <p id="bestDay"></p>
+      <p id="worstDay"></p>
+      <div class="chart-box">
+        <canvas id="emotionPie"></canvas>
+        <canvas id="emotionBar" style="margin-top:15px;"></canvas>
+      </div>
+      <div class="btn" onclick="exportMood()">Export Monthly Mood</div>
+    </div>
+  </div>
+</div>
+ 
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3>Select Emotion</h3>
+    <div class="emotions">
+      <span onclick="setEmotion('😊')">😊</span>
+      <span onclick="setEmotion('😍')">😍</span>
+      <span onclick="setEmotion('😡')">😡</span>
+      <span onclick="setEmotion('😢')">😢</span>
+      <span onclick="setEmotion('😴')">😴</span>
+    </div>
+    <div class="btn" onclick="removeEmotion()">Remove</div>
+    <div class="btn" onclick="closeModal()">Cancel</div>
+  </div>
+</div>
+ 
+<script>
+window.onload = ()=>{
+const calendar = document.getElementById("calendar");
+const modal = document.getElementById("modal");
+const monthYear = document.getElementById("monthYear");
+const token = localStorage.getItem("token");
+if(!token){ alert("Login first"); window.location.href="login.html"; }
+ 
+let selectedDate=null, selectedKey="";
+let currentDate=new Date();
+let pieChart=null, barChart=null;
+let events=[];
+ 
+/* SECTION TOGGLE */
+window.showSection=function(section){
+  document.getElementById("calendarSection").classList.remove("active");
+  document.getElementById("analyzerSection").classList.remove("active");
+  document.getElementById("tabCalendar").classList.remove("active");
+  document.getElementById("tabAnalyzer").classList.remove("active");
+  if(section==="calendar"){ 
+    document.getElementById("calendarSection").classList.add("active"); 
+    document.getElementById("tabCalendar").classList.add("active"); 
+  } else { 
+    document.getElementById("analyzerSection").classList.add("active"); 
+    document.getElementById("tabAnalyzer").classList.add("active"); 
+  }
+}
+ 
+/* ===== BACKEND FETCH FUNCTIONS ===== */
+async function fetchEvents(){
+  try{
+    const res = await fetch("http://localhost:5000/api/calendar",{
+      headers:{ Authorization:"Bearer "+token }
+    });
+    events = await res.json();
+  }catch(e){ console.error(e); events=[]; }
+}
+async function saveEvent(date, emotion){
+  try{
+    await fetch("http://localhost:5000/api/calendar",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+token
+      },
+      body: JSON.stringify({ date, emotion })
+    });
+  }catch(e){ console.error(e); }
+}
+async function deleteEvent(date){
+  try{
+    await fetch(`http://localhost:5000/api/calendar/${date}`,{
+      method:"DELETE",
+      headers:{ Authorization:"Bearer "+token }
+    });
+  }catch(e){ console.error(e); }
+}
+ 
+/* ===== ACHIEVEMENT UPDATE (ONE PER DAY) ===== */
+async function updateCalendarAchievement(){
+  if(!selectedKey) return; // make sure a date is selected
+  try{
+    await fetch("http://localhost:5000/api/achievements/update",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+token
+      },
+      body: JSON.stringify({ 
+        key:"calendar", 
+        increment:1,
+        date:selectedKey
+      })
+    });
+  }catch(e){ console.error("Achievement update failed", e); }
+}
+ 
+/* CALENDAR */
+async function renderCalendar(){
+  await fetchEvents();
+  calendar.innerHTML="";
+ 
+  const year=currentDate.getFullYear();
+  const month=currentDate.getMonth();
+  monthYear.textContent=currentDate.toLocaleString("default",{month:"long",year:"numeric"});
+ 
+  const firstDay=new Date(year, month, 1).getDay();
+  const daysInMonth=new Date(year, month+1,0).getDate();
+  const today=new Date();
+ 
+  for(let i=0;i<firstDay;i++) calendar.appendChild(document.createElement("div"));
+ 
+  for(let d=1; d<=daysInMonth; d++){
+    const div=document.createElement("div");
+    div.className="date";
+    div.innerHTML=`<span>${d}</span>`;
+    const key=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+ 
+    // Check backend events
+    const event=events.find(e=>e.date===key);
+    if(event){
+      const m=document.createElement("div");
+      m.className="monster";
+      m.textContent=event.emotion;
+      div.appendChild(m);
+    }
+ 
+    // Lock past/future days except today
+    if(d!==today.getDate() || month!==today.getMonth() || year!==today.getFullYear()){
+      div.classList.add("locked");
+    }else{
+      div.onclick=()=>openModal(div,key);
+    }
+ 
+    if(d===today.getDate() && month===today.getMonth() && year===today.getFullYear()) div.classList.add("today");
+    calendar.appendChild(div);
+  }
+  analyzeMonth();
+}
+window.changeMonth=(step)=>{ currentDate.setMonth(currentDate.getMonth()+step); renderCalendar(); }
+ 
+/* MODAL */
+function openModal(date,key){ selectedDate=date; selectedKey=key; modal.style.display="flex"; }
+window.closeModal=()=>{ modal.style.display="none"; }
+ 
+window.setEmotion=async(emoji)=>{
+  if(selectedDate.classList.contains("locked")) return;
+  const alreadyLogged = selectedDate.querySelector(".monster");
+  if(alreadyLogged) return alert("You can only log once per day");
+ 
+  const m=document.createElement("div"); 
+  m.className="monster"; 
+  m.textContent=emoji;
+  selectedDate.appendChild(m);
+ 
+  await saveEvent(selectedKey, emoji);
+  await updateCalendarAchievement(); // backend handles one-per-day
+  closeModal(); 
+  renderCalendar();
+}
+ 
+window.removeEmotion=async()=>{
+  if(selectedDate.classList.contains("locked")) return;
+  const m=selectedDate.querySelector(".monster");
+  if(m) {
+    m.remove();
+    await deleteEvent(selectedKey);
+  }
+  closeModal(); 
+  renderCalendar();
+}
+ 
+/* ANALYZER */
+function analyzeMonth(){
+  let happy=0,love=0,angry=0,sad=0,tired=0;
+  let best="",worst="";
+  let bestScore=-99,worstScore=99;
+  const year=currentDate.getFullYear();
+  const month=currentDate.getMonth();
+ 
+  for(let d=1;d<=31;d++){
+    const key=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const event=events.find(e=>e.date===key);
+    if(!event) continue;
+    let score=0;
+    const emo=event.emotion;
+    if(emo==="😊"){happy++;score=2;}
+    if(emo==="😍"){love++;score=3;}
+    if(emo==="😡"){angry++;score=-2;}
+    if(emo==="😢"){sad++;score=-3;}
+    if(emo==="😴"){tired++;score=-1;}
+    if(score>bestScore){bestScore=score;best=d;}
+    if(score<worstScore){worstScore=score;worst=d;}
+  }
+ 
+  document.getElementById("happy").textContent=happy;
+  document.getElementById("love").textContent=love;
+  document.getElementById("angry").textContent=angry;
+  document.getElementById("sad").textContent=sad;
+  document.getElementById("tired").textContent=tired;
+ 
+  const total=happy+love+angry+sad+tired;
+  const positivity=((happy+love)/(total||1))*100;
+  document.getElementById("moodBar").style.width=positivity+"%";
+ 
+  let text="This month had emotional ups and downs.";
+  if(positivity>=70) text="This month was mostly HAPPY!";
+  else if(positivity<=35) text="This month was emotionally heavy.";
+  document.getElementById("analysisText").textContent=text;
+  document.getElementById("bestDay").textContent=best?`Best Day: ${best}`:"";
+  document.getElementById("worstDay").textContent=worst?`Toughest Day: ${worst}`:"";
+ 
+  updateCharts(happy,love,angry,sad,tired);
+}
+ 
+/* CHARTS */
+function updateCharts(happy,love,angry,sad,tired){
+  const data=[happy,love,angry,sad,tired];
+  if(pieChart) pieChart.destroy();
+  if(barChart) barChart.destroy();
+ 
+  pieChart=new Chart(document.getElementById("emotionPie"),{
+    type:"doughnut",
+    data:{labels:["Happy","Love","Angry","Sad","Tired"], datasets:[{data, backgroundColor:["#ffb3d9","#ff7eb6","#ff6b6b","#9fa8da","#ffd166"]}]},
+    options:{plugins:{legend:{position:"bottom"}}, animation:{animateScale:true}}
+  });
+ 
+  barChart=new Chart(document.getElementById("emotionBar"),{
+    type:"bar",
+    data:{labels:["😊","😍","😡","😢","😴"], datasets:[{data, backgroundColor:"#c04a91"}]},
+    options:{plugins:{legend:{display:false}}, animation:{duration:600}}
+  });
+}
+ 
+/* EXPORT */
+window.exportMood=()=>{
+  const text=document.getElementById("analysisText").textContent;
+  const blob=new Blob([text],{type:"text/plain"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="monthly_mood.txt";
+  a.click();
+}
+ 
+/* INITIALIZE */
+renderCalendar();
+};
+</script>
+</body>
+</html>

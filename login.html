@@ -1,0 +1,171 @@
+<html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Productivity App</title>
+ 
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+ 
+<style>
+:root{
+  --bg1:#ffffff;
+  --bg2:#f8c8dc;
+  --bg3:#e75480;
+  --card:#ffffffcc;
+  --primary:#e75480;
+  --primary2:#f8c8dc;
+  --text:#4a2c3a;
+}
+*{
+  box-sizing:border-box;
+  font-family:'Poppins',sans-serif;
+}
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+  transition:.4s;
+}
+.card{
+  width:100%;
+  max-width:400px;
+  background:var(--card);
+  backdrop-filter:blur(12px);
+  padding:30px;
+  border-radius:25px;
+  box-shadow:0 15px 35px rgba(231,84,128,.3);
+  text-align:center;
+}
+h2{
+  margin-bottom:20px;
+  color:var(--text);
+}
+input{
+  width:100%;
+  padding:12px;
+  margin-bottom:15px;
+  border:none;
+  border-radius:12px;
+  outline:none;
+  background:#fff;
+}
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  margin-bottom:10px;
+  transition:.3s;
+}
+button:hover{
+  transform:translateY(-3px);
+}
+.toggle{
+  font-size:13px;
+  cursor:pointer;
+  color:#e75480;
+}
+</style>
+</head>
+<body>
+ 
+<div class="card">
+  <h2 id="formTitle">Login</h2>
+ 
+  <input type="text" id="name" placeholder="Full Name" style="display:none;">
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+ 
+  <button onclick="handleAuth()">Login</button>
+ 
+  <div class="toggle" onclick="toggleMode()">
+    Don't have an account? Register
+  </div>
+</div>
+ 
+<script>
+let isLogin = true;
+
+function toggleMode(){
+  isLogin = !isLogin;
+  document.getElementById("formTitle").innerText = isLogin ? "Login" : "Register";
+  document.querySelector("button").innerText = isLogin ? "Login" : "Register";
+  document.getElementById("name").style.display = isLogin ? "none" : "block";
+  document.querySelector(".toggle").innerText =
+    isLogin ? "Don't have an account? Register" : "Already have an account? Login";
+}
+
+async function handleAuth(){
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  if(!email || !password){
+    alert("Please fill all fields");
+    return;
+  }
+
+  try {
+    if(isLogin){
+      // LOGIN
+      const response = await fetch("http://127.0.0.1:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if(!response.ok){
+        alert(data.message || "Invalid credentials");
+        return;
+      }
+
+      // Save token + user info
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("currentUser", JSON.stringify(data.user));
+
+      window.location.href = "homepage1.html";
+
+    } else {
+      // REGISTER
+      if(!name){
+        alert("Please enter your full name");
+        return;
+      }
+
+      const response = await fetch("http://127.0.0.1:5000/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: name, email, password })
+      });
+
+      const data = await response.json();
+
+      if(!response.ok){
+        alert(data.message || "Signup failed");
+        return;
+      }
+
+      alert("Account created successfully! You can now login.");
+      toggleMode();
+    }
+
+  } catch (error){
+    alert("Cannot connect to backend. Make sure server is running.");
+    console.error(error);
+  }
+}
+</script>
+ 
+</body>
+</html>
+
